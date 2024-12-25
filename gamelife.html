@@ -1,0 +1,156 @@
+<!DOCTYPE html> <html> <head> <title>Game of Life</title> </head> <body> <center><h1>Game of Life</h1> </center> <h1>Rules:</h1> 
+<h3>1 Рождение: Мёртвая клетка с ровно 3 соседями становится живой.</h3> 
+<h3>2 Выживание: Живая клетка с 2 или 3 соседями остаётся живой.</h3> 
+<h3>3 Смерть: Живая клетка умирает, если у неё меньше 2 или больше 3 соседей.</h3> 
+<center><canvas id="myCanvas" width="300" height="300" style="border: 1px solid black;"> Sorry, your browser does not support canvas. </canvas> 
+<br> <button id="startButton" style="background-color: #228B22; color: black;"> Start </button> 
+<button id="stopButton" style="background-color: #ebeb10; color: black;"> Stop </button>
+ <button id="resetButton" style="background-color: #ff4805; color: black;"> Reset </button></center>
+
+<label for="speedControl">Speed:</label>
+<select id="speedControl">
+    <option value="500">0.5x</option>
+    <option value="300" selected>1x</option>
+    <option value="200">1.5x</option>
+    <option value="100">2x</option>
+</select>
+
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    let cellSize = 30;
+    let fieldSize = 30;
+    let currentField = new Array(fieldSize);
+    let nextField = new Array(fieldSize);
+
+    let canvasRect = canvas.getBoundingClientRect();
+    let tm = null; // Таймер для управления симуляцией
+    let interval = 300; // Интервал по умолчанию
+
+    for (let i = 0; i < fieldSize; i++){
+        nextField[i] = new Array(fieldSize);
+        currentField[i] = new Array(fieldSize);
+    }
+
+    function init(){
+        for (let i = 0; i < fieldSize; i++) {
+            for (let j = 0; j < fieldSize; j++) {
+                currentField[i][j] = 0;
+                nextField[i][j] = 0;
+            }
+        }
+        draw();
+    }
+
+    function neighborCount(r,c){ //количество соседей
+        let sum = 0;
+        for (let i = -1; i <= 1; i++){
+            for (let j = -1; j <= 1; j++){
+                sum += currentField[(r + i + fieldSize)%fieldSize][(c + j + fieldSize)%fieldSize];  //значение клетки
+            }
+        }
+        sum -= currentField[r][c];
+        return sum;
+    }
+
+    function makeStep(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                let nbs = neighborCount(i, j);
+                if (((currentField[i][j] === 0) && (nbs === 3)) || ((currentField[i][j] === 1) && ((nbs === 2) || (nbs === 3)))){
+                    nextField[i][j] = 1;
+                }
+                else {
+                    nextField[i][j] = 0;
+                }
+
+            }
+        }
+        for (let i = 0; i<fieldSize; i++){
+            for (let j = 0; j<fieldSize; j++){
+                currentField[i][j] = nextField[i][j];
+            }
+        }
+    }
+
+    function draw(){
+        for (let i = 0; i < fieldSize; i++){
+            for (let j = 0; j < fieldSize; j++){
+                if (currentField[i][j] === 0){
+                    ctx.fillStyle = "purple";
+                }
+                else{
+                    ctx.fillStyle = "green";
+                }
+                ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);  //прямоугольник
+                ctx.strokeStyle = "DarkBlue";
+                ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    function go(){
+        makeStep();
+        draw();
+    }
+
+    function mClick(click) {
+        let x = Math.floor((click.clientX - canvasRect.left) / cellSize); //ось ординат
+        let y = Math.floor((click.clientY - canvasRect.top) / cellSize);  // ось абсцисс
+        currentField[y][x] = 1;
+        draw();
+    }
+
+    canvas.addEventListener("click", mClick);    // добавление обработчика события для клика по холсту
+    function randomizeField() { //заполнение по "Старту"
+        for (let i = 0; i < fieldSize; i++) {
+            for (let j = 0; j < fieldSize; j++) {
+                if (Math.random() > 0.7) {
+                    currentField[i][j] = 1;
+                } else {
+                    currentField[i][j] = 0;
+                }
+            }
+        }
+        draw();
+    }
+
+    // Обработчик события для кнопки "Start"
+    document.getElementById("startButton").addEventListener("click", () => {
+        randomizeField();
+        if (!tm) {
+            tm = setInterval(go, interval);
+        }
+    });
+
+    // Обработчик события для кнопки "Stop"
+    document.getElementById("stopButton").addEventListener("click", () => {
+        if (tm) {
+            clearInterval(tm); // Остановка таймера
+            tm = null;
+        }
+    });
+
+    // Обработчик события для кнопки "Reset"
+    document.getElementById("resetButton").addEventListener("click", () => {
+        if (tm) {
+            clearInterval(tm); // Остановка таймера
+            tm = null;
+        }
+        init(); // Сброс поля
+    });
+
+    // Обработчик для изменения скорости
+    document.getElementById("speedControl").addEventListener("change", (event) => {
+        interval = parseInt(event.target.value);
+        if (tm) {
+            clearInterval(tm);
+            tm = setInterval(go, interval);
+        }
+    });
+
+    draw();
+    init();
+</script>
+</body>
+</html>
